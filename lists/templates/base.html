@@ -1,10 +1,37 @@
-<!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
+    <title>To-Do lists</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="lists/static/bootstrap/css/bootstrap.min.css" media="screen">
+    <link href="lists/static/base.css" rel="stylesheet" media="screen">
 </head>
 <body>
-$END$
+<div class="container">
+
+    <div class="row">
+        <div class="col-md-6 col-md-offset-3 jumbotron">
+            <div class="text-center">
+                <h1>{% block header_text %}{% endblock %}</h1>
+                <form method="POST" action="{% block form_action %}{% endblock %}">
+                    <input name="item_text" id="id_new_item" class="form-control input-lg" placeholder="작업 아이템 입력"/>
+                    {% csrf_token %}
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 col-md-offset-3">
+            {% block table %}
+            {% endblock %}
+        </div>
+    </div>
+
+</div>
+
+<script src="lists/static/bootstrap/js/bootstrap.min.js"></script>
+<script src="lists/static/bootstrap/js/jquery.min.js"></script>
+
 </body>
 </html>
