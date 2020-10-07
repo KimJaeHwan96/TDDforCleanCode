@@ -114,3 +114,39 @@ TCP, 혹은 UDP형식 데이터를 파일 시스템을 이용해서 통신하는
 반해서 유닉스 소켓은 어플리케이션 계층에서 TCP계층으로 내려가 바로 데이터를 전달하고, 수신측도 TCP계층에서 수신해 어플리케이션 계층으로 올라갑니다.)
 
 # 9장 페브릭을 이용한 배포 자동화
+
+
+    def _create_directory_structure_if_necessary(site_folder):
+        for subfolder in ('database', 'static', 'virtualenv', 'source'):
+            run('mkdir -p %s %s' % (site_folder, subfolder))
+
+    def _get_latest_source(source_folder):
+        if exists(source_folder + './git'):
+            run('cd %s && git fetch' % (source_folder,))
+        else:
+            run('git clone %s %s' % (REPO_URL, source_folder))
+        current_commit = local("git log -n 1 --format=%H", capture=True)
+        run('cd %s && git reset --hard %s' % (source_folder, current_commit))
+
+    def _update_settings(source_folder, site_name):
+        settings_path = source_folder + 'superlists/settings.py'
+        sed(settings_path, "DEBUG = True", "DEBUG = False")
+        sed(settings_path, 'ALLOWED_HOSTS =.+$', 'ALLOWED_HOSTS = ["%s"]' (site_name,))
+        secret_key_file = source_folder + '/superlists/secret_key.py'
+        if not exists(secret_key_file):
+            chars = 'abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)'
+            key = ''.join(random.SystemRandom().choice(chars) for _ in range(50))
+            append(secret_key_file, "SECRET_KEY = '%s'" % (key,))
+        append(settings_path, '\nfrom .secret_key import SECRET_KEY')
+
+    def _update_virtualenv(source_folder):
+        virtualenv_folder = source_folder + '/../virtualenv'
+        if not exists(virtualenv_folder + '/bin/pip'):
+            run('virtualenv -- python=python3 %s' % (virtual_folder,))
+        run('%s/bin/pip install -r %s/requirements.txt' % (virtualenv_folder, source_folder))
+
+    def _update_static_files(source_folder):
+        run('cd %s && ../virtualenv/bin/python3 manage.py collectstatic --noinput' %(source_folder,))
+
+    def _update_database(source_folder):
+        run('cd %s && ../virtualenv/bin/python3 manage.py migrate --noinput' % (source_folder,))
