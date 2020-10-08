@@ -17,7 +17,7 @@
                     <input name="item_text" id="id_new_item" class="form-control input-lg" placeholder="작업 아이템 입력"/>
                     {% csrf_token %}
                     {% if error %}
-                        <div class="form-group http://127.0.0.1:8000/lists/1/has-error">
+                        <div class="form-group has-error">
                             <span class="help-block">{{ error }}</span>
                         </div>
                     {% endif %}
