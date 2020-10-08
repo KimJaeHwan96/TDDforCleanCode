@@ -1,12 +1,12 @@
 from selenium import webdriver
-from django.contrib.staticfiles.testing import StaticLiveServerTestCase
+#from django.contrib.staticfiles.testing import StaticLiveServerTestCase
+from django.test import LiveServerTestCase
 
-
-class FunctionalTest(StaticLiveServerTestCase):
+class FunctionalTest(LiveServerTestCase):
     def setUp(self) -> None:
         self.browser = webdriver.Chrome("chromedriver.exe")
         self.browser.implicitly_wait(3)
-        self.server_url = 'https://localhost:8000'
+        #self.server_url = 'https://localhost:8000'
 
     def tearDown(self) -> None:
         self.browser.refresh()

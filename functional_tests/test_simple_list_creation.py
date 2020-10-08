@@ -7,7 +7,7 @@ class NewVisitorTest(FunctionalTest):
     def test_can_start_a_list_and_retrieve_it_later(self):
         # 에디스는 멋진 작업 목록 온라인 앱이 나왔다는 소식을 듣고
         # 해당 웹 사이트를 확인하러 간다.
-        self.browser.get(self.server_url)
+        self.browser.get(self.live_server_url)
 
         # 웹 페이지 타이틀과 헤더가 'To-Do'를 표시하고 있다.
         self.assertIn('To-Do', self.browser.title)
@@ -50,7 +50,7 @@ class NewVisitorTest(FunctionalTest):
 
         # 페이지는 다시 갱신되고, 두 개 아이템이 목록에 보인다.
 
-        #self.check_for_row_in_list_table('2: 공작깃털을 이용해서 그물 만들기')
+        self.check_for_row_in_list_table('2: 공작깃털을 이용해서 그물 만들기')
         self.check_for_row_in_list_table('1: 공작깃털 사기')
 
         # 새로운 사용자인 프란시스가 사이트에 접속한다
@@ -63,7 +63,7 @@ class NewVisitorTest(FunctionalTest):
 
         # 프란시스가 홈페이지에 접속한다
         # 에디스의 리스트는 보이지 않는다.
-        self.browser.get(self.server_url)
+        self.browser.get(self.live_server_url)
         page_text = self.browser.find_element_by_tag_name('body').text
         self.assertNotIn('공작깃털 사기', page_text)
         self.assertNotIn('그물 만들기', page_text)
