@@ -5,9 +5,11 @@ from django.http import HttpRequest
 from django.template.loader import render_to_string
 import re
 from lists.models import Item, List
+from lists.forms import ItemForm
 from django.utils.html import escape
 class HomePageTest(TestCase):
-
+    """
+    maxDiff =None
     # render_to_string로 받은 html 데이터와 response.content.decode()로 받은 html 데이터가 같지 않다.
     # render_to_string에 request=request를 해도 값이 같아지지 않아 csrf의 값을 삭제한다
     def remove_csrf(self, origin):
@@ -21,12 +23,20 @@ class HomePageTest(TestCase):
     def test_home_page_returns_correct_html(self):
         request = HttpRequest()
         response = home_page(request)
-        expected_html = self.remove_csrf(render_to_string('home.html', request=request))
-        self.assertEqual(self.remove_csrf(response.content.decode()), expected_html)
+        expected_html = self.remove_csrf(render_to_string('home.html', {'form': ItemForm()}, request=request))
+        self.assertMultiLineEqual(self.remove_csrf(response.content.decode()), expected_html)
 
         self.assertTrue(response.content.startswith(b'<html>'))
         self.assertIn(b'<title>To-Do lists</title>', response.content)
         self.assertTrue(response.content.endswith(b'</html>'))
+    """
+    def test_home_page_renders_home_template(self):
+        response = self.client.get('/')
+        self.assertTemplateUsed(response, 'home.html')
+
+    def test_home_page_uses_item_form(self):
+        response = self.client.get('/')
+        self.assertIsInstance(response.content['form'], ItemForm)
 
 class ListViewTest(TestCase):
     def test_uses_list_template(self):
