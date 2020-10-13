@@ -1,7 +1,10 @@
 from django import forms
 from .models import Item
+from django.core.exceptions import ValidationError
 
-EMPTY_LIST_ERROR = "빈 아이템을 등록할 수 없습니다"
+
+EMPTY_LIST_ERROR = "You can't have an empty list item"
+DUPLICATE_ITEM_ERROR = "이미 리스트에 해당 아이템이 있습니다"
 
 # 모델 폼
 class ItemForm(forms.ModelForm):
@@ -21,13 +24,17 @@ class ItemForm(forms.ModelForm):
         self.instance.list = for_list
         return super().save()
 
-"""
-일반 폼
-class ItemForm(forms.Form):
-    item_text = forms.CharField(
-        widget=forms.fields.TextInput(attrs={
-            'placeholder': '작업 아이템 입력',
-            'class': 'form-control input-lg',
-        })
-    )
-"""
+class ExistingListItemForm(ItemForm):
+    def __init__(self, for_list, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.instance.list = for_list
+
+    def validate_unique(self):
+        try:
+            self.instance.validate_unique()
+        except ValidationError as e:
+            e.error_dict = {'text': [DUPLICATE_ITEM_ERROR]}
+            self._update_errors(e)
+
+    def save(self):
+        return forms.models.ModelForm.save(self)
