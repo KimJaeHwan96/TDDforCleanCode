@@ -153,7 +153,7 @@ TCP, 혹은 UDP형식 데이터를 파일 시스템을 이용해서 통신하는
 
 
 # 10 입력 유효성 검사 및 테스트 구조화
-## 10.1 테스트 구조화
+## 10.1 테스트 구조화 197p ~ 206p
 기능 테스트와 단위 테스트를 한 파일에 다 작성 하였는데 이러한 방법은 좋지 않습니다.    
 
 기능 테스트를 한 폴더에 넣고 기능이나 사용자 스토리 단위로 테스트를 그룹화 합니다.    
@@ -179,25 +179,59 @@ TCP, 혹은 UDP형식 데이터를 파일 시스템을 이용해서 통신하는
     │  test_views.py    
     │  __init__.py   
 
-## 10.2 뷰를 이용한 유효성 검사
+## 10.2 뷰를 이용한 유효성 검사 207p~
 
     def test_cannot_save_empty_list_items(self):
         list_ = List.objects.create()
         item = Item(list=list_, text='')
         with self.assertRaises(ValidationError):
             item.save()
-            item.full_clean()
+           
 
 이 단위 테스트를 실행하면 AssertError: ValidationError not raised 라는 결과가 나옵니다.     
 
 TextField가 빈 값을 허용하지 않음에도 테스트가 실패하는 이유가 무엇일까요?
 
-Django 모델은 저장 처리에 대해서 유효성 검사를 못하기 때문입니다. 데이터 베이스 저장과 관련된 터리에선 에러가 발행하지만
+Django 모델은 저장 처리에 대해서 유효성 검사를 못하기 때문입니다. 데이터베이스 저장과 관련된 처리에선 에러가 발행하지만
 SQLite의 경우 빈 값 제약을 강제적으로 부여할 수 없기 때문에 save 메소드가 빈 값을 그냥 통과시킵니다.     
 
-이때 수동으로 유효성 검사를 하는 함수가 있는데 <a href="https://docs.djangoproject.com/en/3.1/ref/models/instances/#validating-objects">full_clean()</a>이라는 함수 입니다     
+이때 수동으로 유효성 검사를 하는 함수가 있는데 <a href="https://docs.djangoproject.com/en/3.1/ref/models/instances/#validating-objects">full_clean()</a>이라는 함수 입니다.   
+
+
 
 # 11장 간단한 폼
+Django의 폼은 다음과 같은 강력한 기능을 가지고 있습니다.
+- 사용자 입력을 처리하고 검증해서 에러로 출력할 수 있다.
+- HTML 입력 요소를 표시하기 위한 템플릿으로 사용할 수 있으며, 에러 메시지도 제공한다.
+- 일부 폼은 데이터를 데이터 베이스에서 저장할 수도 있다.
+## 11.1 일반 폼
+
+일반 폼은 forms.Form 클래스를 상속받아 생성합니다.    
+
+이 폼은 widget으로 하나하나 지정해야하여 조금 귀찮은 면이 있습니다.   
+
+모델에 관련이 없을 때 쓰기 때문에 이 폼을 사용하진 않고 이해만 하고 넘어 갑니다.  
+
+
+## 11.2 모델 폼
+
+모델 폼은 forms.ModelForm 클래스를 상속받아 생성합니다.    
+사용할 폼이 모델과 연관되어 있을 때 사용합니다.
+
+모델에 정의한 필드만을 가지고 html 렌더링을 하기 때문에 이 폼을 사용하는 것이 훨씬 편리합니다.
+
+Meta에선 폼이 어떤 모델을 이용할지와 어떤 필드를 사용할지를 정의합니다. 
+
+뷰에서는 error를 정의하여 html에 렌더링하였지만 모델 폼에 error_messages를 정의하면 form 만 렌더링하면 form의 에러 메시지를 사용할 수 있습니다.
+
+## 11.3 폼 자체 save 메소드 사용
+save 메소드를 사용할때 아이템이 어떤 리스트에 소속되어지는지 알아야 합니다.
+
+save 메소드에게 어떤 리스트에 저장해야 하는지 알려주면 코드를 줄일 수 있습니다.
+
+    def save(self, for_list):
+        self.instance.list = for_list
+        return super().save()
 
 # 12장 고급 폼
 
