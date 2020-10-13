@@ -150,3 +150,55 @@ TCP, 혹은 UDP형식 데이터를 파일 시스템을 이용해서 통신하는
 
     def _update_database(source_folder):
         run('cd %s && ../virtualenv/bin/python3 manage.py migrate --noinput' % (source_folder,))
+
+
+# 10 입력 유효성 검사 및 테스트 구조화
+## 10.1 테스트 구조화
+기능 테스트와 단위 테스트를 한 파일에 다 작성 하였는데 이러한 방법은 좋지 않습니다.    
+
+기능 테스트를 한 폴더에 넣고 기능이나 사용자 스토리 단위로 테스트를 그룹화 합니다.    
+
+이렇게 한 폴더에 넣을 떄 중요한 점은 __init__ 파일을 폴더에 넣어 줘야 패키지로 인식 된다는 점 입니다.    
+
+반복되는 코드는 base 파일에 리팩터링합니다.   
+
+    │  base.py   
+    │  test_layout_and_styling.py    
+    │  test_list_item_validation.py   
+    │  test_simple_list_creation.py    
+    │  __init__.py   
+
+단위 테스트는 일반적으로 model, view, form로 나누어 별도 테스트 파일을 만듭니다.
+
+이때 템플릿을 위한 단위테스트가 없는 이유는 '상수는 테스트 하지마라' 라는 큐칙 때문입니다.   
+
+단위 테스트는 로직이나 흐름제어, 설정 등을 테스트합니다.
+
+    │  test_forms.py    
+    │  test_models.py    
+    │  test_views.py    
+    │  __init__.py   
+
+## 10.2 뷰를 이용한 유효성 검사
+
+    def test_cannot_save_empty_list_items(self):
+        list_ = List.objects.create()
+        item = Item(list=list_, text='')
+        with self.assertRaises(ValidationError):
+            item.save()
+            item.full_clean()
+
+이 단위 테스트를 실행하면 AssertError: ValidationError not raised 라는 결과가 나옵니다.     
+
+TextField가 빈 값을 허용하지 않음에도 테스트가 실패하는 이유가 무엇일까요?
+
+Django 모델은 저장 처리에 대해서 유효성 검사를 못하기 때문입니다. 데이터 베이스 저장과 관련된 터리에선 에러가 발행하지만
+SQLite의 경우 빈 값 제약을 강제적으로 부여할 수 없기 때문에 save 메소드가 빈 값을 그냥 통과시킵니다.     
+
+이때 수동으로 유효성 검사를 하는 함수가 있는데 <a href="https://docs.djangoproject.com/en/3.1/ref/models/instances/#validating-objects">full_clean()</a>이라는 함수 입니다     
+
+# 11장 간단한 폼
+
+# 12장 고급 폼
+
+# 13장 조심스럽게 자바스크립트 시도해보기
