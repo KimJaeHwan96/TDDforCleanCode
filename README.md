@@ -237,8 +237,30 @@ save 메소드에게 어떤 리스트에 저장해야 하는지 알려주면 코
 
 # 12장 고급 폼
 
+    class ExistingListItemForm(ItemForm):
+            def __init__(self, for_list, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                self.instance.list = for_list
 
+ItemForm을 상속받은 폼입니다. 기존 폼은 list를 계속 지정해줘야하는데 이 폼은 생성자에서 지정을 해주기 때문에 따로 list를 지정할 필요가 없습니다.   
 
+            def validate_unique(self):
+                try:
+                    self.instance.validate_unique()
+                except ValidationError as e:
+                    e.error_dict = {'text': [DUPLICATE_ITEM_ERROR]}
+                    self._update_errors(e)
+
+validate_unique 메소드는 필드의 uniqueness를 검증하는데 문제가 있으면 ValidationError를 raise합니다.    
+
+그 후 검증 에러를 취해서 에러 메시지를 변경하고 다시 폼으로 전달합니다.    
+
+        def save(self):
+            return forms.models.ModelForm.save(self)
+            
+ItemForm은 list를 지정해줘야하기 때문에 인자에 for_list를 추가 했지만 이 폼은 이미 생성자에서 지정을 하였기 때문에 불필요합니다.
+
+save 메소드를 오버라이드하는데 이때 super().save()를 하면 상속 받은 ItemForm의 save 메소드를 사용하므로 더 상위인 forms.models.ModelForm의 save 메소드를 사용합니다.    
 
 - - -
 <h2>후기</h2>
