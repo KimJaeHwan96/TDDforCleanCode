@@ -1,4 +1,4 @@
-<h2>참고자료: 클린코드를 위한 테스트 주도 개발 </h2>   
+<h2>참고자료: 클린코드를 위한 테스트 주도 개발 (초판: 2015)</h2>  
 <img src="https://user-images.githubusercontent.com/64777061/95957617-e2268780-0e3a-11eb-8380-1d92c009541e.jpg" width="30%"></img>    
 site: http://www.kjhwebsite-staging.ga/
 
@@ -38,7 +38,7 @@ WebDriver는 제한 시간 값 (30 초)까지 2 초마다 요소를 확인합니
 <img src="https://user-images.githubusercontent.com/64777061/96218675-36a73f80-0fc0-11eb-9314-8ada6e109e12.jpg" width="50%"></img>    
 
 
-위 사진은 사용자입장에서 테스트하는 기능테스트와 개발자 입장에서 테스트하는 단윝테스트 흐름도입니다. 기능테스트를 상위 테스트 관점으로 생각하면 됩니다.    
+위 사진은 사용자입장에서 테스트하는 기능테스트와 개발자 입장에서 테스트하는 단위테스트 흐름도입니다. 기능테스트를 상위 테스트 관점으로 생각하면 됩니다.    
 
 먼저 기능 테스트를 작성하고 실패하는지 확인합니다. "최소 코드 작성" 프로세스에선 작은 TDD 주기를 통해 테스트가 통과하도록 만듭니다.    
 이때 하나 또는 그 이상의 단위 테스트를 작성하고 이를 단위 테스트-코드 주기에 넣어서 통과할 때까지 주기를 반복합니다.    
@@ -192,42 +192,80 @@ TCP, 혹은 UDP형식 데이터를 파일 시스템을 이용해서 통신하는
 
 # 9장 페브릭을 이용한 배포 자동화
 
+deploy_tools/fabfile.py의 코드입니다
 
     def _create_directory_structure_if_necessary(site_folder):
         for subfolder in ('database', 'static', 'virtualenv', 'source'):
-            run('mkdir -p %s %s' % (site_folder, subfolder))
+            run('mkdir -p %s %s' % (site_folder, subfolder)) @1 2
+          
+@1 run은 페브릭에서 가장 자주 사용되는 명령입니다. "이 셸 명령을 서버에서 실행해"라는 의미입니다.    
+
+@2 mkdir -p는 상위 디렉터리도 작성해주며 이미 있는 폴더라도 에러가 발생하지 않습니다.    
+
 
     def _get_latest_source(source_folder):
-        if exists(source_folder + './git'):
-            run('cd %s && git fetch' % (source_folder,))
+        if exists(source_folder + './git'): @1
+            run('cd %s && git fetch' % (source_folder,)) @2 3
         else:
-            run('git clone %s %s' % (REPO_URL, source_folder))
-        current_commit = local("git log -n 1 --format=%H", capture=True)
-        run('cd %s && git reset --hard %s' % (source_folder, current_commit))
+            run('git clone %s %s' % (REPO_URL, source_folder)) @4
+        current_commit = local("git log -n 1 --format=%H", capture=True) @5
+        run('cd %s && git reset --hard %s' % (source_folder, current_commit)) @6
+
+
+@1 서버에 파일 및 디렉터리가 존재하는지 확인합니다. .git이라는 숨겨진 폴더가 있는지 확인해서 리포지토리가 이미 폴더에 클론돼 있는지 확인하는 것입니다.    
+
+@2 현재 디렉터리를 설정하기 위해서 많은 명령어가 cd로 시작합니다.     
+패브릭은 상태 정보를 유지하지 않기 때문에, 어떤 디렉터리에서 명령이 실행됐는지 또 실행될것인지 기억하지 못합니다.      
+
+@3 git fetch는 기존 리포지토리 폴더에 가장 최근에 커밋한 것을 웹으로부터 다운로드합니다.
+
+@4 기존 리포지토리가 없으면 .git clone을 이용해서 지정한 리포지토리 URL로부터 폴더 구조를 포함한 전체 내용을 다운로드합니다.
+
+@5 패브릭의 local 명령은 명령어를 로컬 장비에서 실행합니다. subprocess.Popen을 랩핑한 것으로 매우 편리합니다.     
+여기서는 git log 출력 내용을 캡쳐해서 로컬 트리에 있는 현재 커밋해쉬를 취득합니다.     
+이것은 로컬 장비에서 체크아웃한 상태와 동일한 상태로 서버가 종료된다는 것을 의미합니다.(단 서버에 push한 상태여야 합니다.)    
+
+@6 reset --hard를 이용해서 서버의 코드 디렉터리에 발생한 모든 변경을 초기화합니다.    
+
 
     def _update_settings(source_folder, site_name):
         settings_path = source_folder + 'superlists/settings.py'
-        sed(settings_path, "DEBUG = True", "DEBUG = False")
-        sed(settings_path, 'ALLOWED_HOSTS =.+$', 'ALLOWED_HOSTS = ["%s"]' (site_name,))
+        sed(settings_path, "DEBUG = True", "DEBUG = False") @1
+        sed(settings_path, 'ALLOWED_HOSTS =.+$', 'ALLOWED_HOSTS = ["%s"]' (site_name,)) 
         secret_key_file = source_folder + '/superlists/secret_key.py'
-        if not exists(secret_key_file):
+        if not exists(secret_key_file): @2
             chars = 'abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)'
             key = ''.join(random.SystemRandom().choice(chars) for _ in range(50))
             append(secret_key_file, "SECRET_KEY = '%s'" % (key,))
-        append(settings_path, '\nfrom .secret_key import SECRET_KEY')
+        append(settings_path, '\nfrom .secret_key import SECRET_KEY') @3 
+        
+@1 패브릭의 sed 명령은 파일 내에 있는 문자열을 특정 문자열로 변경합니다.     
+@2 Django에선 암호화(쿠키과 CSRF 보호)를 위해서 SECRET_KEY를 이용합니다. 키를 이용할 때는 공개 중인 소스코드 리포지터리에 있는 비밀 키와 다른 키를 이용해야합니다.        
+이 코드는 비밀 키가 존재하지 않으면 새로운 키를 만들어서 설정 파일에 임포트합니다.       
+@3 append 명령은 파일 끝에 새로운 줄을 추가합니다. 이때 \n을 붙여주어야 문제가 생기지 않습니다.
+
+
 
     def _update_virtualenv(source_folder):
         virtualenv_folder = source_folder + '/../virtualenv'
-        if not exists(virtualenv_folder + '/bin/pip'):
+        if not exists(virtualenv_folder + '/bin/pip'): 
             run('virtualenv -- python=python3 %s' % (virtual_folder,))
-        run('%s/bin/pip install -r %s/requirements.txt' % (virtualenv_folder, source_folder))
+        run('%s/bin/pip install -r %s/requirements.txt' % (virtualenv_folder, source_folder)) 
+
 
     def _update_static_files(source_folder):
-        run('cd %s && ../virtualenv/bin/python3 manage.py collectstatic --noinput' %(source_folder,))
+        run('cd %s && ../virtualenv/bin/python3 manage.py collectstatic --noinput' %(source_folder,)) 
 
     def _update_database(source_folder):
         run('cd %s && ../virtualenv/bin/python3 manage.py migrate --noinput' % (source_folder,))
 
+위에 세 개의 메소드들은 이름만으로 이해가 가기 때문에 크게 설명하지 않았습니다.    
+
+
+
+아쉽게도 저는 패브릭을 완전히 이해하지 못했고 에러가 떠서 배포 자동화에 성공하지 못했습니다.      
+뿐만아니라 인증을 위한 비밀번호를 요구하여 이또한 해결해야할 사항인 것 같습니다.
+배포 자동화가 아주 간단한 것이 아니라는 것을 깨닫고 조금더 시간을 두어 고민해봐야할 문제인 것 같습니다. 
 
 # 10 입력 유효성 검사 및 테스트 구조화
 ## 10.1 테스트 구조화 197p ~ 206p
